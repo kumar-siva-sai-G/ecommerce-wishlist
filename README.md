@@ -1,7 +1,3 @@
-Here is a comprehensive, technical **`README.md`** file tailored for your assessment submission and GitHub repository. It details the project background, specification alignment, visual hierarchy, core merging/deduplication algorithms, and deployment instructions.
-
----
-
 # 🛒 ApexMarket — E-Commerce Storefront & Deduplicated Wishlist Engine (v1)
 
 A modern, high-performance, single-page e-commerce technical prototype built with vanilla JavaScript, HTML5, and Tailwind CSS. The platform enables users to browse a 18-product catalog, manage multiple dynamic wishlists in `localStorage`, and execute **item-level deduplicated merges** between source collections.
