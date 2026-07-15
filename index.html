@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ApexMarket - Technical Wishlist Prototype</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <style>
+    /* Custom scrollbar styling for high-fidelity UI scroll containers */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    
+    /* Smooth CSS Animations for Modals and Toasts */
+    .modal-backdrop-animate {
+      transition: opacity 0.2s ease-out;
+    }
+    .modal-content-animate {
+      transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen overflow-hidden font-sans flex flex-col antialiased">
+
+  <!-- ==================== TOP NAVIGATION BAR ==================== -->
+  <header class="bg-slate-900 text-white h-16 flex-shrink-0 z-40 shadow-md">
+    <div class="w-full px-6 h-full flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-600 p-2 rounded-lg text-white flex items-center justify-center shadow-sm">
+          <i class="fa-solid fa-store text-lg"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight tracking-tight">ApexMarket</h1>
+          <p class="text-xs text-slate-400">Advanced Wishlist Merge Workspace</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 text-sm">
+        <div class="bg-slate-800/80 px-3.5 py-1.5 rounded-full flex items-center gap-2 border border-slate-700 shadow-inner">
+          <i class="fa-solid fa-heart text-emerald-500"></i>
+          <span class="font-medium text-slate-300">Total Wishlists:</span>
+          <span id="nav-wishlist-count" class="bg-indigo-600 text-white font-bold text-xs px-2.5 py-0.5 rounded-full">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="flex-1 w-full px-6 grid grid-cols-12 gap-6 items-start overflow-hidden">
+    
+    <!-- LEFT COLUMN: Product Showcase (~70% Width - Independent Scroll) -->
+    <section class="col-span-12 lg:col-span-8 h-[calc(100vh-80px)] overflow-y-auto py-8 pr-2 flex flex-col gap-6">
+      <div class="flex items-center justify-between w-full">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 tracking-tight">Featured Catalog</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Explore premium hardware and assign items directly to custom wishlists.</p>
+        </div>
+        <span id="catalog-count-badge" class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200/60 shadow-2xs">18 Products Loaded</span>
+      </div>
+
+      <!-- Dynamic Product Cards Grid -->
+      <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-8 w-full">
+        <!-- Managed dynamically by JavaScript -->
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: Control Center (~30% Width - Independent Scroll) -->
+    <aside class="col-span-12 lg:col-span-4 h-[calc(100vh-80px)] overflow-y-auto py-8 pr-2 flex flex-col gap-8">
+      
+      <!-- CARD 1: Merge Wishlists Panel -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 md:p-8 shadow-xs flex-shrink-0 w-full">
+        <div class="flex items-center gap-3 mb-5 border-b border-slate-100 pb-3">
+          <div class="bg-indigo-50 p-2.5 rounded-lg text-indigo-600 border border-indigo-100/50">
+            <i class="fa-solid fa-code-merge text-base"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base leading-tight">De-duplicated Merging System</h3>
+            <p class="text-xs text-slate-500">Combine two wishlists using unique item-level ID verification.</p>
+          </div>
+        </div>
+
+        <form id="merge-form" onsubmit="handleMerge(event)" class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="merge-source-a" class="block text-[11px] font-bold text-slate-600 uppercase mb-1 tracking-wider">Source List A</label>
+              <select id="merge-source-a" onchange="validateMergeInputs()" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium text-slate-700" required>
+                <option value="" disabled selected>Select List A</option>
+              </select>
+            </div>
+            <div>
+              <label for="merge-source-b" class="block text-[11px] font-bold text-slate-600 uppercase mb-1 tracking-wider">Source List B</label>
+              <select id="merge-source-b" onchange="validateMergeInputs()" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium text-slate-700" required>
+                <option value="" disabled selected>Select List B</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Warning Display -->
+          <div id="merge-warning" class="hidden text-xs bg-amber-50 border border-amber-200 text-amber-800 px-3.5 py-2.5 rounded-lg flex items-center gap-2.5">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+            <span id="merge-warning-text" class="font-medium">Source wishlists cannot be the same.</span>
+          </div>
+
+          <div class="flex items-center gap-2.5 py-1 px-0.5">
+            <input type="checkbox" id="merge-delete-sources" class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer accent-indigo-600" />
+            <label for="merge-delete-sources" class="text-xs font-semibold text-slate-600 cursor-pointer select-none">
+              Delete original source wishlists after successful merge
+            </label>
+          </div>
+
+          <div>
+            <label for="merge-target-name" class="block text-[11px] font-bold text-slate-600 uppercase mb-1 tracking-wider">Combined Target Name</label>
+            <input type="text" id="merge-target-name" oninput="validateMergeInputs()" placeholder="e.g., Ultimate Studio Build" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-slate-800 font-medium" required />
+          </div>
+
+          <button id="merge-submit-btn" type="submit" disabled class="w-full bg-slate-200 text-slate-400 font-semibold text-xs py-3 rounded-lg transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+            <i class="fa-solid fa-bolt"></i> Execute De-duplicated Merge
+          </button>
+        </form>
+      </div>
+
+      <!-- CARD 2: Wishlist Operations & Dynamic Scrollable Sidebar -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 md:p-8 shadow-xs flex flex-col mb-8 w-full">
+        
+        <!-- Sidebar Control Panel Header -->
+        <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 flex-shrink-0">
+          <h3 class="font-bold text-slate-900 flex items-center gap-2 text-base">
+            <i class="fa-solid fa-list-ul text-slate-500"></i> Active Wishlists
+          </h3>
+          <button onclick="openCreateModal()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-indigo-200/50 shadow-2xs">
+            <i class="fa-solid fa-plus"></i> New List
+          </button>
+        </div>
+
+        <!-- Container of Lists -->
+        <div id="wishlist-container" class="space-y-5 w-full">
+          <!-- Injected dynamically by JavaScript -->
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- ==================== DIALOGS & OVERLAYS ==================== -->
+  <!-- 1. Custom Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"></div>
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md p-6 relative z-10 mx-4 transform scale-95 transition-transform duration-200 modal-content-animate">
+      <div class="flex items-start gap-4">
+        <div class="bg-rose-50 text-rose-600 p-3 rounded-full flex-shrink-0">
+          <i class="fa-solid fa-trash-can text-lg"></i>
+        </div>
+        <div class="space-y-1">
+          <h3 class="font-bold text-slate-900 text-base">Delete Wishlist</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">Are you sure you want to delete this wishlist? All items will be removed permanently. This action cannot be undone.</p>
+        </div>
+      </div>
+      <div class="mt-6 flex justify-end gap-3">
+        <button onclick="closeDeleteModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
+        <button id="delete-modal-confirm-btn" class="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-sm">Confirm Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Custom Create Wishlist Prompt Modal -->
+  <div id="create-modal" class="fixed inset-0 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"></div>
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-sm p-6 relative z-10 mx-4 transform scale-95 transition-transform duration-200 modal-content-animate">
+      <div class="flex items-center gap-3 border-b border-slate-100 pb-3 mb-4">
+        <div class="bg-indigo-50 text-indigo-600 p-2 rounded-lg">
+          <i class="fa-solid fa-folder-plus text-base"></i>
+        </div>
+        <h3 class="font-bold text-slate-900 text-base">New Wishlist</h3>
+      </div>
+      <div>
+        <label for="new-wishlist-name" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Wishlist Name</label>
+        <input type="text" id="new-wishlist-name" placeholder="e.g., Audio Production Gear" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium text-slate-800" />
+      </div>
+      <div class="mt-6 flex justify-end gap-3">
+        <button onclick="closeCreateModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
+        <button onclick="handleCreateWishlist()" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm">Create List</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Dynamic Toast Popup System -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-3 pointer-events-none">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+    <span id="toast-message" class="font-medium">Action completed successfully</span>
+  </div>
+
+  <!-- ==================== LOGIC & DATA ENGINE ==================== -->
+  <script>
+    const LOCAL_STORAGE_KEY = 'app_wishlists_v1';
+    let deleteTargetId = null;
+
+    function createFallbackPlaceholder(title, bgColor = "3b82f6", textColor = "ffffff") {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+        <rect width="400" height="300" fill="#${bgColor}"/>
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#${textColor}" font-family="sans-serif" font-size="18" font-weight="bold">${title}</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    }
+
+    // Comprehensive 18-product catalog
+    const SEED_PRODUCTS = [
+      {
+        id: "prod-101",
+        name: "Acoustic Noise-Canceling Headphones",
+        price: 249.99,
+        category: "Audio",
+        image: "https://avstore.in/cdn/shop/files/1.AVStore-Bose-QuietComfort-Wireless-Headphones-Front-Left-Angled-View-Black.jpg?v=1709896228"
+      },
+      {
+        id: "prod-102",
+        name: "Ergonomic Mechanical Keyboard",
+        price: 129.50,
+        category: "Peripherals",
+        image: "http://www.mechlands.com/cdn/shop/articles/IMG_5091.jpg?v=1729491372"
+      },
+      {
+        id: "prod-103",
+        name: "Minimalist Smartwatch Series X",
+        price: 199.00,
+        category: "Wearables",
+        image: "https://www.zdnet.com/a/img/resize/2853ec08b82b71744854e80a49a1fb02416ae734/2026/03/31/ef4aee02-5dc4-4c89-9df9-b1de00b4c6eb/screenshot-2026-03-31-at-4-56-38pm.png?auto=webp&width=1280"
+      },
+      {
+        id: "prod-104",
+        name: "Ultra-Wide Gaming Monitor 34\"",
+        price: 499.99,
+        category: "Displays",
+        image: "https://i.rtings.com/assets/pages/I3j8zFmb/best-uw-gaming-monitors-20230802-medium.jpg?format=auto"
+      },
+      {
+        id: "prod-105",
+        name: "Precision Wireless Gaming Mouse",
+        price: 79.99,
+        category: "Peripherals",
+        image: "https://archertechlab.com/cdn/shop/files/10000_1800x.png?v=1729766165"
+      },
+      {
+        id: "prod-106",
+        name: "Studio USB Condenser Microphone",
+        price: 119.00,
+        category: "Audio",
+        image: "https://fotocentreindia.com/wp-content/uploads/Godox-UMic82-Desktop-USB-Condenser-Microphone-Online-Buy-in-india_1.jpg"
+      },
+      {
+        id: "prod-107",
+        name: "Adjustable Aluminum Monitor Arm",
+        price: 64.99,
+        category: "Accessories",
+        image: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcQVBFwR-6ldVPPQMR7LJWRU7l6ETTmSbmvqBalixz6aMe4Duu7wNBCcLEysKl5YzWMLzLunXTaNwn7ED_4"
+      },
+      {
+        id: "prod-108",
+        name: "4K High-Dynamic-Range Web Camera",
+        price: 149.95,
+        category: "Peripherals",
+        image: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcTk8r3jhvsGlqVqziSwcGLlTOO845OZp1FRUKgbUqA92htVVcRDJl152TR9Gw4xZSjfdnLkR09zpY_syJs"
+      },
+      {
+        id: "prod-109",
+        name: "Desk Mat Extended Micro-Weave",
+        price: 29.99,
+        category: "Accessories",
+        image: "https://i5.walmartimages.com/seo/Large-Gaming-Mouse-Pad-Stitched-Edges-Extended-Mousepad-Superior-Micro-Weave-Cloth-Non-Slip-Base-Water-Resist-Keyboard-Pad-Desk-Mat-Gamer-Office-Home_194ed714-3a5d-4261-ad25-19c9d2999919.b7b5224f7d06eaa43cb43444e16bdc5a.jpeg?odnHeight=768&odnWidth=768&odnBg=FFFFFF"
+      },
+      {
+        id: "prod-110",
+        name: "Smart RGB Ambient Light Bar Pair",
+        price: 89.00,
+        category: "Lighting",
+        image: "https://img.kwcdn.com/product/fancy/925b87f1-6cca-4c3e-aca1-8e6bc622a26d.jpg?imageMogr2/auto-orient%7CimageView2/2/w/800/q/70/format/webp"
+      },
+      {
+        id: "prod-111",
+        name: "Hi-Fi Desktop Reference Speakers",
+        price: 179.99,
+        category: "Audio",
+        image: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcROcfSXYPbPjEPLuTGqJCnflgB1d20cuhJ7aoDQOGPmebr9S1p3YUL2XaEKT01cUERJOpHSb1_GwsMSR98"
+      },
+      {
+        id: "prod-112",
+        name: "Fast Charging MagSafe Stand",
+        price: 49.99,
+        category: "Accessories",
+        image: "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcTPIboj3uijYJGynW4nZ3bW2UHQu-e4pdIv5TH22r9EW6NpbAcCJjgEwDBd6suQ8b5JyHgw6u1iuH12UAM"
+      },
+      {
+        id: "prod-113",
+        name: "Portable NVMe SSD 2TB",
+        price: 219.00,
+        category: "Storage",
+        image: "https://encrypted-tbn2.gstatic.com/licensed-image?q=tbn:ANd9GcTbs7j8OQvMmynEww7yWM77gxbT04IDhztvf_N9G41EE8_HTZuv1gMdrmRPnNAsGyT3KL-HRZw4irH3teM"
+      },
+      {
+        id: "prod-114",
+        name: "Thunderbolt 4 Multi-Port Docking Hub",
+        price: 229.50,
+        category: "Connectivity",
+        image: "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcRFFbLzaSMnjLKLoc2ON-WB8lo6Isq3WRDz3slfBhqIrU8FMOZcR-fn1yZ9bWkJaZjK1mqcSn_5klw0eu8"
+      },
+      {
+        id: "prod-115",
+        name: "Ergonomic Memory Foam Wrist Rest",
+        price: 19.99,
+        category: "Accessories",
+        image: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcRens9iw7JZQGLNAFai1onkIpFhAc1POzIIsd49YJ95Tte1EuwKnZp1g7l68oLAweuhuuE3qjpzf5lOSRw"
+      },
+      {
+        id: "prod-116",
+        name: "Noise-Isolating In-Ear Studio Monitors",
+        price: 99.00,
+        category: "Audio",
+        image: "https://cdn.uc.assets.prezly.com/0df27cf8-0567-41ae-8fea-638b069c3773/IER-M500_3colors_background_Black-Large.jpg"
+      },
+      {
+        id: "prod-117",
+        name: "Motorized Sit-Stand Desk Frame",
+        price: 349.00,
+        category: "Furniture",
+        image: "https://encrypted-tbn2.gstatic.com/licensed-image?q=tbn:ANd9GcQcp2yTLVeIylBPKC65JU00c4HGPPADQ8-JRMeOoxK4abwnphwG-XT1DadS5zqLP7dw-2OW-ueGHT0MusM"
+      },
+      {
+        id: "prod-118",
+        name: "Cable Management Raceway Channel Kit",
+        price: 24.99,
+        category: "Accessories",
+        image: "https://m.media-amazon.com/images/I/71ZLRCijQYL.jpg"
+      }
+    ];
+
+    let wishlists = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeWorkspace();
+    });
+
+    function initializeWorkspace() {
+      loadWishlists();
+      renderAllComponents();
+    }
+
+    function loadWishlists() {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        try {
+          wishlists = JSON.parse(stored);
+        } catch (e) {
+          console.error("Critical: Storage corruption. Resetting to seeding values...", e);
+          seedInitialCollections();
+        }
+      } else {
+        seedInitialCollections();
+      }
+    }
+
+    function seedInitialCollections() {
+      wishlists = [
+        {
+          id: "wl-default-1",
+          name: "Dream Studio Rig",
+          items: [SEED_PRODUCTS[0], SEED_PRODUCTS[1], SEED_PRODUCTS[7]]
+        },
+        {
+          id: "wl-default-2",
+          name: "Productivity Office",
+          items: [SEED_PRODUCTS[1], SEED_PRODUCTS[3], SEED_PRODUCTS[6], SEED_PRODUCTS[13]]
+        },
+        {
+          id: "wl-default-3",
+          name: "Audio Engineer Essentials",
+          items: [SEED_PRODUCTS[0], SEED_PRODUCTS[5], SEED_PRODUCTS[10], SEED_PRODUCTS[15]]
+        }
+      ];
+      saveWishlists();
+    }
+
+    function saveWishlists() {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(wishlists));
+    }
+
+    function handleImageError(imgElement, productName) {
+      imgElement.onerror = null;
+      imgElement.src = createFallbackPlaceholder(productName, "3b82f6", "ffffff");
+    }
+
+    function renderAllComponents() {
+      renderProducts();
+      renderWishlistsView();
+      populateDropdowns();
+      validateMergeInputs();
+    }
+
+    function renderProducts() {
+      const container = document.getElementById('product-grid');
+      const countBadge = document.getElementById('catalog-count-badge');
+      
+      if (countBadge) {
+        countBadge.textContent = `${SEED_PRODUCTS.length} Products Loaded`;
+      }
+      
+      container.innerHTML = '';
+
+      SEED_PRODUCTS.forEach(product => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between w-full group';
+
+        const optionsHTML = wishlists.length === 0
+          ? `<option value="" disabled selected>No wishlists available</option>`
+          : `<option value="" disabled selected>Select Wishlist...</option>` +
+            wishlists.map(wl => `<option value="${wl.id}">${wl.name}</option>`).join('');
+
+        card.innerHTML = `
+          <div>
+            <div class="h-44 w-full bg-slate-100 overflow-hidden relative">
+              <img src="${product.image}" alt="${product.name}" onerror="handleImageError(this, '${product.category}')" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md shadow-xs">
+                ${product.category}
+              </span>
+            </div>
+            <div class="p-4">
+              <h3 class="font-bold text-slate-800 text-sm leading-snug line-clamp-2 min-h-[40px]">${product.name}</h3>
+              <p class="text-indigo-600 font-extrabold text-base mt-2">$${product.price.toFixed(2)}</p>
+            </div>
+          </div>
+
+          <div class="p-4 pt-0 border-t border-slate-100 mt-2">
+            <div class="flex gap-2 items-center mt-3">
+              <select id="select-${product.id}" class="flex-1 text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-700 font-medium truncate">
+                ${optionsHTML}
+              </select>
+              <button onclick="handleAddToWishlist('${product.id}')" class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white p-2 rounded-lg text-xs transition-colors flex items-center justify-center min-w-[36px] h-[34px] shadow-xs" title="Add to Wishlist">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderWishlistsView() {
+      const container = document.getElementById('wishlist-container');
+      const navCount = document.getElementById('nav-wishlist-count');
+      
+      navCount.textContent = wishlists.length;
+      container.innerHTML = '';
+
+      if (wishlists.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 px-4 bg-slate-50/70 rounded-xl border border-dashed border-slate-200 w-full">
+            <div class="w-12 h-12 mx-auto mb-3 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+              <i class="fa-regular fa-folder-open text-xl"></i>
+            </div>
+            <p class="text-slate-700 font-bold text-sm">No wishlists created yet</p>
+            <p class="text-slate-400 text-xs mt-1">Click "New List" above to organize your gear.</p>
+          </div>
+        `;
+        return;
+      }
+
+      wishlists.forEach(wl => {
+        const itemTotal = wl.items.reduce((sum, item) => sum + item.price, 0);
+        const card = document.createElement('div');
+        card.className = 'border border-slate-200/90 rounded-xl overflow-hidden bg-white shadow-2xs w-full transition-all';
+
+        // Custom Empty State for an Individual Wishlist
+        const itemsHTML = wl.items.length === 0
+          ? `<div class="p-6 text-center bg-slate-50/50 border border-dashed border-slate-200 rounded-lg my-1">
+               <i class="fa-solid fa-basket-shopping text-slate-300 text-2xl mb-2 block"></i>
+               <p class="text-xs font-bold text-slate-600">Your wishlist is empty!</p>
+               <p class="text-[11px] text-slate-400 mt-0.5">Select a product from the catalog on the left to add items.</p>
+             </div>`
+          : wl.items.map(item => `
+              <div class="flex items-center justify-between p-2.5 bg-slate-50/80 hover:bg-slate-100/60 border border-slate-100 rounded-lg w-full transition-colors">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <img src="${item.image}" onerror="handleImageError(this, '${item.category}')" class="w-8 h-8 rounded object-cover flex-shrink-0 border border-slate-200/60" alt="" />
+                  <div class="truncate">
+                    <p class="text-[11px] font-bold text-slate-800 truncate leading-tight">${item.name}</p>
+                    <p class="text-[10px] text-indigo-600 font-extrabold">$${item.price.toFixed(2)}</p>
+                  </div>
+                </div>
+                <button onclick="removeItemFromWishlist('${wl.id}', '${item.id}')" class="text-slate-400 hover:text-rose-600 p-1.5 transition-colors flex-shrink-0" title="Remove item">
+                  <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+            `).join('');
+
+        card.innerHTML = `
+          <div class="p-4 bg-slate-100/90 border-b border-slate-200/80 flex items-center justify-between">
+            <div class="min-w-0 pr-2">
+              <h4 class="font-bold text-xs text-slate-800 truncate leading-tight">${wl.name}</h4>
+              <p class="text-[10px] text-slate-500 font-medium mt-0.5">
+                ${wl.items.length} ${wl.items.length === 1 ? 'item' : 'items'} • Valued at <span class="text-slate-700 font-bold">$${itemTotal.toFixed(2)}</span>
+              </p>
+            </div>
+            <button onclick="openDeleteModal('${wl.id}')" class="text-slate-400 hover:text-rose-600 p-1.5 transition-colors text-xs" title="Delete entire list">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+          <div class="p-4 space-y-2.5">
+            ${itemsHTML}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function populateDropdowns() {
+      const sourceA = document.getElementById('merge-source-a');
+      const sourceB = document.getElementById('merge-source-b');
+
+      const prevValueA = sourceA.value;
+      const prevValueB = sourceB.value;
+
+      const options = wishlists.map(wl => `<option value="${wl.id}">${wl.name} (${wl.items.length} items)</option>`).join('');
+
+      sourceA.innerHTML = `<option value="" disabled selected>Select List A</option>` + options;
+      sourceB.innerHTML = `<option value="" disabled selected>Select List B</option>` + options;
+
+      if (wishlists.some(w => w.id === prevValueA)) sourceA.value = prevValueA;
+      if (wishlists.some(w => w.id === prevValueB)) sourceB.value = prevValueB;
+    }
+
+    function validateMergeInputs() {
+      const selectA = document.getElementById('merge-source-a');
+      const selectB = document.getElementById('merge-source-b');
+      const nameInput = document.getElementById('merge-target-name');
+      const submitBtn = document.getElementById('merge-submit-btn');
+      const warningContainer = document.getElementById('merge-warning');
+      const warningText = document.getElementById('merge-warning-text');
+
+      const valA = selectA.value;
+      const valB = selectB.value;
+      const name = nameInput.value.trim();
+
+      let hasWarning = false;
+      let isValid = true;
+
+      if (!valA || !valB) {
+        isValid = false;
+      }
+
+      if (valA && valB && valA === valB) {
+        hasWarning = true;
+        warningText.textContent = "Source wishlists cannot be identical.";
+        isValid = false;
+      }
+
+      if (!name) {
+        isValid = false;
+      }
+
+      if (hasWarning) {
+        warningContainer.classList.remove('hidden');
+      } else {
+        warningContainer.classList.add('hidden');
+      }
+
+      if (isValid) {
+        submitBtn.disabled = false;
+        submitBtn.className = "w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-xs py-3 rounded-lg transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer";
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.className = "w-full bg-slate-200 text-slate-400 font-semibold text-xs py-3 rounded-lg transition-all flex items-center justify-center gap-2 cursor-not-allowed";
+      }
+    }
+
+    function handleAddToWishlist(productId) {
+      const select = document.getElementById(`select-${productId}`);
+      const listId = select.value;
+
+      if (!listId) {
+        showToast("Please select a target wishlist first.", "warning");
+        return;
+      }
+
+      const product = SEED_PRODUCTS.find(p => p.id === productId);
+      const targetList = wishlists.find(w => w.id === listId);
+
+      if (product && targetList) {
+        const exists = targetList.items.some(item => item.id === productId);
+        if (exists) {
+          showToast(`"${product.name}" is already in "${targetList.name}".`, "warning");
+          return;
+        }
+
+        targetList.items.push(product);
+        saveWishlists();
+        renderWishlistsView();
+        populateDropdowns();
+        validateMergeInputs();
+        showToast(`Added to "${targetList.name}"`, "success");
+      }
+    }
+
+    function removeItemFromWishlist(wishlistId, productId) {
+      const targetList = wishlists.find(w => w.id === wishlistId);
+      if (targetList) {
+        targetList.items = targetList.items.filter(item => item.id !== productId);
+        saveWishlists();
+        renderAllComponents();
+        showToast("Item removed from list.", "success");
+      }
+    }
+
+    function openDeleteModal(wishlistId) {
+      deleteTargetId = wishlistId;
+      const modal = document.getElementById('delete-modal');
+      const modalBox = modal.querySelector('.modal-content-animate');
+      
+      document.getElementById('delete-modal-confirm-btn').onclick = function() {
+        executeDelete();
+      };
+
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-95');
+      modalBox.classList.add('scale-100');
+    }
+
+    function closeDeleteModal() {
+      const modal = document.getElementById('delete-modal');
+      const modalBox = modal.querySelector('.modal-content-animate');
+      
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-100');
+      modalBox.classList.add('scale-95');
+      deleteTargetId = null;
+    }
+
+    function executeDelete() {
+      if (deleteTargetId) {
+        const deletedListName = wishlists.find(w => w.id === deleteTargetId)?.name || "Wishlist";
+        wishlists = wishlists.filter(w => w.id !== deleteTargetId);
+        saveWishlists();
+        renderAllComponents();
+        closeDeleteModal();
+        showToast(`Deleted "${deletedListName}"`, "success");
+      }
+    }
+
+    function openCreateModal() {
+      const modal = document.getElementById('create-modal');
+      const modalBox = modal.querySelector('.modal-content-animate');
+      
+      document.getElementById('new-wishlist-name').value = '';
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-95');
+      modalBox.classList.add('scale-100');
+    }
+
+    function closeCreateModal() {
+      const modal = document.getElementById('create-modal');
+      const modalBox = modal.querySelector('.modal-content-animate');
+      
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-100');
+      modalBox.classList.add('scale-95');
+    }
+
+    function handleCreateWishlist() {
+      const input = document.getElementById('new-wishlist-name');
+      const name = input.value.trim();
+
+      if (!name) {
+        showToast("Please enter a valid wishlist name.", "warning");
+        return;
+      }
+
+      const newList = {
+        id: `wl-${Date.now()}`,
+        name: name,
+        items: []
+      };
+
+      wishlists.push(newList);
+      saveWishlists();
+      renderAllComponents();
+      closeCreateModal();
+      showToast(`Created wishlist "${newList.name}"`, "success");
+    }
+
+    function handleMerge(event) {
+      event.preventDefault();
+
+      const sourceAId = document.getElementById('merge-source-a').value;
+      const sourceBId = document.getElementById('merge-source-b').value;
+      const targetNameInput = document.getElementById('merge-target-name');
+      const targetName = targetNameInput.value.trim();
+      
+      const deleteSourcesCheckbox = document.getElementById('merge-delete-sources');
+      const shouldDeleteSources = deleteSourcesCheckbox ? deleteSourcesCheckbox.checked : false;
+
+      if (sourceAId === sourceBId) {
+        showToast("Validation Error: Cannot merge a wishlist with itself.", "error");
+        return;
+      }
+
+      const listA = wishlists.find(w => w.id === sourceAId);
+      const listB = wishlists.find(w => w.id === sourceBId);
+
+      if (!listA || !listB) {
+        showToast("Execution Error: Selected source list not found.", "error");
+        return;
+      }
+
+      // Deduplication Logic via Set tracking
+      const seenIds = new Set(listA.items.map(item => item.id));
+      const deduplicatedItems = [...listA.items];
+
+      listB.items.forEach(item => {
+        if (!seenIds.has(item.id)) {
+          seenIds.add(item.id);
+          deduplicatedItems.push(item);
+        }
+      });
+
+      const mergedWishlist = {
+        id: `wl-merged-${Date.now()}`,
+        name: targetName,
+        items: deduplicatedItems
+      };
+
+      if (shouldDeleteSources) {
+        wishlists = wishlists.filter(w => w.id !== sourceAId && w.id !== sourceBId);
+      }
+
+      wishlists.push(mergedWishlist);
+      saveWishlists();
+
+      targetNameInput.value = '';
+      if (deleteSourcesCheckbox) deleteSourcesCheckbox.checked = false;
+      renderAllComponents();
+
+      if (shouldDeleteSources) {
+        showToast(`Merged into "${mergedWishlist.name}" and purged sources.`, "success");
+      } else {
+        showToast(`Successfully merged lists into "${mergedWishlist.name}" (${deduplicatedItems.length} unique items)`, "success");
+      }
+    }
+
+    let toastTimeout;
+    function showToast(message, type = "success") {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+
+      clearTimeout(toastTimeout);
+
+      toastMessage.textContent = message;
+
+      if (type === "success") {
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
+      } else if (type === "warning") {
+        toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400 text-base";
+      } else if (type === "error") {
+        toastIcon.className = "fa-solid fa-circle-xmark text-rose-400 text-base";
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
